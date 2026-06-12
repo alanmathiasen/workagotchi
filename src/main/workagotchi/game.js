@@ -1,9 +1,6 @@
 // Authoritative tamagotchi game loop. Lives in the main process so it keeps
 // ticking regardless of which windows are open or focused. All stat data lives
 // in state.js — this module just advances time and applies changes to it.
-
-import { Notification } from "electron";
-
 const TICK_MS = 200; // how often the loop advances
 
 export function createGame() {
@@ -12,7 +9,6 @@ export function createGame() {
   let timer = null;
   let lastTick = 0;
   const listeners = new Set();
-  let notificationShown = false;
 
   function getState() {
     return { ageSeconds, ticks };
@@ -30,18 +26,6 @@ export function createGame() {
 
     ageSeconds += dt;
     ticks += 1;
-
-    if (!notificationShown) {
-      const noti = new Notification({
-        title: 'Hola',
-        body: 'Esto es una notificación desde Electron',
-        silent: false,
-      });
-
-      noti.show();
-
-      notificationShown = true;
-    }
 
     emit();
   }

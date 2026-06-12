@@ -4,6 +4,8 @@ import {
   alimentarImg as alimentarUrl,
   obeliscoImg as obeliscoUrl,
   eatingLionImg as loboUrl, // the "lobo" sprite is the happiness face
+  championLionImg as championUrl, // the winning sprite (holds the World Cup)
+  worldCupImg as copaUrl, // the rare World Cup trophy — instant win
   gameOverImg as gameOverUrl,
   cloudImgs as CLOUD_URLS,
   stoneImg as stoneUrl,
@@ -15,6 +17,8 @@ const PLAYER_W = 120;
 const PLAYER_H = 22;
 const PLAYER_Y = GAME_HEIGHT - 70;
 const ITEM_R = 34; // half-size of a falling item (used for both rendering and collision)
+const TROPHY_R = 42; // the World Cup is a bit bigger than the medialunas
+const TROPHY_DELAY_MS = [4000, 9000]; // drops once, somewhere in this window (never at the start)
 const BAD_CHANCE = 0.3; // ~30% of spawned items are obeliscos (bad)
 const WIN_TARGET = 10; // catch this many good medialunas to win
 const NUM_CLOUDS = 5; // how many clouds drift across the sky
@@ -34,6 +38,8 @@ export default class CatchScene extends Phaser.Scene {
     this.load.svg("alimentar", alimentarUrl, { width: TEX, height: TEX });
     this.load.svg("obelisco", obeliscoUrl, { width: TEX, height: TEX });
     this.load.svg("lobo", loboUrl, { width: TEX, height: TEX });
+    this.load.svg("campeon", championUrl, { width: TEX, height: TEX });
+    this.load.svg("copa", copaUrl, { width: TEX, height: TEX });
     this.load.svg("gameover", gameOverUrl, { width: TEX, height: TEX });
     CLOUD_URLS.forEach((url, i) => this.load.image(`cloud${i}`, url));
     this.load.image("stone", stoneUrl);
@@ -73,6 +79,16 @@ export default class CatchScene extends Phaser.Scene {
       this.items.push(item);
       this.spawnItem(item, true);
     }
+
+    // The World Cup trophy: a one-shot bonus that falls a few seconds in (never
+    // at the start). Catching it is an instant win. Created hidden/inactive.
+    this.trophy = this.add.image(0, 0, "copa").setVisible(false);
+    this.trophy.setDisplaySize(TROPHY_R * 2, TROPHY_R * 2);
+    this.trophyActive = false;
+    this.trophyDropped = false;
+    this.time.delayedCall(Phaser.Math.Between(...TROPHY_DELAY_MS), () =>
+      this.dropTrophy(),
+    );
 
     // Input: arrow keys + A/D.
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -119,6 +135,17 @@ export default class CatchScene extends Phaser.Scene {
     item.setAngle(item.isBad ? 180 : 0); // flip the obelisco upside-down
   }
 
+  // Release the World Cup trophy from the top. Only ever happens once.
+  dropTrophy() {
+    if (this.trophyDropped || this.isOver) return;
+    this.trophyDropped = true;
+    this.trophyActive = true;
+    this.trophy.x = Phaser.Math.Between(TROPHY_R, GAME_WIDTH - TROPHY_R);
+    this.trophy.y = -TROPHY_R;
+    this.trophy.fallSpeed = Phaser.Math.Between(180, 260);
+    this.trophy.setVisible(true); // depth 0, igual que las medialunas (cae tras las piedras)
+  }
+
   // Place a cloud at a random height/size; drifting starts from the left edge.
   resetCloud(cloud, initial = false) {
     const targetW = Phaser.Math.Between(90, 170);
@@ -145,11 +172,13 @@ export default class CatchScene extends Phaser.Scene {
     this.hud.setText(`${this.score}`);
   }
 
-  endGame(result) {
+  endGame(result, { champion = false } = {}) {
     this.isOver = true;
 
-    // Clear the falling items off the screen.
+    // Clear the falling items (and the trophy, if it's mid-fall) off the screen.
     this.items.forEach((item) => item.setVisible(false));
+    this.trophyActive = false;
+    this.trophy.setVisible(false);
 
     const won = result === "win";
 
@@ -159,9 +188,16 @@ export default class CatchScene extends Phaser.Scene {
       this.player.setScale(PLAYER_W / this.player.width); // keep the same on-screen width
     }
 
-    const message = won
-      ? "¡GANASTE!\ncomiste 10 medialunas marplatenses\n\npulsá una tecla para salir"
-      : "¡PERDISTE!\nhabia un piquete en la 9 de Julio\n\npulsá una tecla para salir";
+    let message;
+    if (champion) {
+      message = "¡SALISTE CAMPEÓN DEL MUNDO! 🏆\n\npulsá ENTER para salir";
+    } else if (won) {
+      message =
+        "¡GANASTE!\ncomiste 10 medialunas marplatenses\n\npulsá ENTER para salir";
+    } else {
+      message =
+        "¡PERDISTE!\nhabia un piquete en la 9 de Julio\n\npulsá ENTER para salir";
+    }
 
     this.add
       .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, message, {
@@ -176,8 +212,8 @@ export default class CatchScene extends Phaser.Scene {
     // Tell the dashboard (via the main process) how the game ended.
     window.api?.minigame?.reportResult(result);
 
-    // Next key press closes the minigame window.
-    this.input.keyboard.once("keydown", () => window.close());
+    // Only ENTER closes the minigame window.
+    this.input.keyboard.once("keydown-ENTER", () => window.close());
   }
 
   update(_time, delta) {
@@ -234,6 +270,33 @@ export default class CatchScene extends Phaser.Scene {
           this.updateHud();
         }
         this.spawnItem(item);
+      }
+    }
+
+    // --- The World Cup trophy (one-shot, instant win if caught) ---
+    if (this.trophyActive) {
+      this.trophy.y += this.trophy.fallSpeed * dt;
+
+      const overlapsVertically =
+        this.trophy.y + TROPHY_R >= playerTop &&
+        this.trophy.y - TROPHY_R <= playerBottom;
+      const overlapsHorizontally =
+        Math.abs(this.trophy.x - this.player.x) <= halfW + TROPHY_R;
+
+      if (overlapsVertically && overlapsHorizontally) {
+        this.trophyActive = false;
+        this.trophy.setVisible(false);
+        // ¡Campeón del mundo! Swap the player to the trophy-holding sprite, win.
+        this.player.setTexture("campeon");
+        this.player.setScale(PLAYER_W / this.player.width);
+        this.endGame("win", { champion: true });
+        return;
+      }
+
+      // Missed it: it only ever drops once, so just retire it.
+      if (this.trophy.y - TROPHY_R > GAME_HEIGHT) {
+        this.trophyActive = false;
+        this.trophy.setVisible(false);
       }
     }
   }

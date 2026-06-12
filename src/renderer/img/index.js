@@ -54,6 +54,8 @@ import moon from "./moon.svg";
 import sun from "./sun.svg";
 
 import eatingLionImg from "./minigame/eating-lion.svg";
+import championLionImg from "./minigame/lobo-campeon.svg";
+import worldCupImg from "./minigame/copa-del-mundo.svg";
 
 // Cloud PNGs (filenames have spaces/parens, so glob them); exclude the stone.
 const cloudImgs = Object.entries(
@@ -107,6 +109,8 @@ export {
   moon,
   sun,
   eatingLionImg,
+  championLionImg,
+  worldCupImg,
   gameOverTitle,
   jornadaLaboralTitle,
   felicidadState,
