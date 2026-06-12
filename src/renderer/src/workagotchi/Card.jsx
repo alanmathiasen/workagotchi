@@ -37,7 +37,7 @@ export function Card({
 
   function getBorderColor() {
     if (!isWorkDayFinished) return "#0E2745"; // neutro
-    return hasWon ? "#371615" : "#3E3E3E"; // ganó : perdió
+    return hasWon ? "#F7B940" : "#3E3E3E"; // ganó : perdió
   }
 
   function getBorderImage() {
