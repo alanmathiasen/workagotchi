@@ -56,11 +56,17 @@ export function useGameLogic() {
         fullness: clamp(p.fullness + 30),
         happiness: clamp(p.happiness + 5),
       })),
-    rest: () =>
+    takeCoffee: () =>
       setPetStatus((p) => ({
         ...p,
         energy: clamp(p.energy + 30),
-        relax: clamp(p.relax + 10),
+        fullness: clamp(p.relax + 10),
+      })),
+    meditate: () =>
+      setPetStatus((p) => ({
+        ...p,
+        relax: clamp(p.energy + 30),
+        energy: clamp(p.relax + 10),
       })),
   };
 }

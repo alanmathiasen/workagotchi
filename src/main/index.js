@@ -1,5 +1,5 @@
 import { join } from "path";
-import { app, BrowserWindow, Menu, ipcMain } from "electron";
+import { app, BrowserWindow, Menu, ipcMain, screen } from "electron";
 import { createGame } from "./workagotchi/game.js";
 
 const rendererUrl = process.env["ELECTRON_RENDERER_URL"];
@@ -9,6 +9,11 @@ const game = createGame();
 
 let dashboardWin = null;
 let minigameWin = null;
+
+// Tamaño fijo de la ventana flotante (bloqueado para que el bug de DPI de
+// Windows no la agrande al moverla — ver move-window-by).
+const FLOATING_WIDTH = 400;
+const FLOATING_HEIGHT = 300;
 
 // Re-enable DevTools shortcuts (F12 / Ctrl+Shift+I) on every window, since
 // Menu.setApplicationMenu(null) removed the default toggleDevTools accelerator.
@@ -35,9 +40,16 @@ function loadPage(win, page) {
 }
 
 function createFloatingWindow() {
+  const { workArea } = screen.getPrimaryDisplay();
   const win = new BrowserWindow({
-    width: 400,
-    height: 300,
+    width: FLOATING_WIDTH,
+    height: FLOATING_HEIGHT,
+    minWidth: FLOATING_WIDTH,
+    maxWidth: FLOATING_WIDTH,
+    minHeight: FLOATING_HEIGHT,
+    maxHeight: FLOATING_HEIGHT,
+    x: workArea.x + workArea.width - FLOATING_WIDTH,
+    y: workArea.y + workArea.height - FLOATING_HEIGHT,
     frame: false,
     transparent: true,
     resizable: false,
@@ -125,8 +137,15 @@ app.whenReady().then(() => {
   ipcMain.on("move-window-by", (event, dx, dy) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win) return;
-    const [x, y] = win.getPosition();
-    win.setPosition(Math.round(x + dx), Math.round(y + dy));
+    // setBounds con tamaño fijo: con escalado ≠ 100%, setPosition hace crecer
+    // la ventana unos px en cada llamada (electron/electron#9477).
+    const { x, y } = win.getBounds();
+    win.setBounds({
+      x: Math.round(x + dx),
+      y: Math.round(y + dy),
+      width: FLOATING_WIDTH,
+      height: FLOATING_HEIGHT,
+    });
   });
 
   // --- Game loop wiring ---
