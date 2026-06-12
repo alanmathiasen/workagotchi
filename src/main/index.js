@@ -3,17 +3,14 @@ import { app, BrowserWindow, Menu, ipcMain, screen } from "electron";
 import { createGame } from "./workagotchi/game.js";
 
 const rendererUrl = process.env["ELECTRON_RENDERER_URL"];
-const isDev = !!rendererUrl;
 
 const game = createGame();
 
 let dashboardWin = null;
 let minigameWin = null;
 
-// Tamaño fijo de la ventana flotante (bloqueado para que el bug de DPI de
-// Windows no la agrande al moverla — ver move-window-by).
-const FLOATING_WIDTH = 400;
-const FLOATING_HEIGHT = 300;
+const FLOATING_WIDTH = 500;
+const FLOATING_HEIGHT = 800;
 
 // Re-enable DevTools shortcuts (F12 / Ctrl+Shift+I) on every window, since
 // Menu.setApplicationMenu(null) removed the default toggleDevTools accelerator.
@@ -94,6 +91,9 @@ function createMinigameWindow() {
   minigameWin = new BrowserWindow({
     width: 640,
     height: 720,
+    // El área de contenido (no la ventana con marco) mide exactamente lo que
+    // mide el juego, así el canvas llena la ventana sin barras de letterbox.
+    useContentSize: true,
     title: "Catch Game",
     webPreferences: {
       preload: join(__dirname, "../preload/index.mjs"),
@@ -109,9 +109,11 @@ function createMinigameWindow() {
 }
 
 app.on("web-contents-created", (_event, contents) => {
-  enableDevToolsShortcut(contents);
+  // enableDevToolsShortcut(contents);
   // Auto-open DevTools (detached) for every window on creation.
-  contents.on("did-finish-load", () => contents.openDevTools({ mode: "detach" }));
+  // contents.on("did-finish-load", () =>
+  //   contents.openDevTools({ mode: "detach" }),
+  // );
 });
 
 app.whenReady().then(() => {
@@ -162,7 +164,7 @@ app.whenReady().then(() => {
   game.start();
 
   createFloatingWindow();
-  createMinigameWindow();
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createFloatingWindow();
   });

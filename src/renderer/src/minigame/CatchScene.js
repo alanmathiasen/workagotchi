@@ -3,7 +3,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from "./constants";
 import {
   alimentarImg as alimentarUrl,
   obeliscoImg as obeliscoUrl,
-  happinessImg as loboUrl, // the "lobo" sprite is the happiness face
+  eatingLionImg as loboUrl, // the "lobo" sprite is the happiness face
   gameOverImg as gameOverUrl,
   cloudImgs as CLOUD_URLS,
   stoneImg as stoneUrl,
@@ -78,19 +78,25 @@ export default class CatchScene extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys("A,D");
 
-    // HUD.
-    this.hud = this.add.text(12, 12, "", {
-      fontFamily: "system-ui, sans-serif",
-      fontSize: "20px",
-      color: "#111111",
-    });
+    // HUD. The 🎯 emoji uses the system emoji font and the score uses the pixel
+    // font; their glyph metrics differ wildly, so they're separate text objects
+    // each vertically centered (origin y = 0.5) on the same baseline to align.
+    const HUD_Y = 22;
+    this.add.text(12, HUD_Y, "🎯", { fontSize: "20px" }).setOrigin(0, 0.5);
+    this.hud = this.add
+      .text(44, HUD_Y, "", {
+        fontFamily: '"Press Start 2P", system-ui, sans-serif',
+        fontSize: "16px",
+        color: "#111111",
+      })
+      .setOrigin(0, 0.5);
     this.add.text(
       12,
       GAME_HEIGHT - 28,
       "← / →  o  A / D  ·  evitá los obeliscos",
       {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: "13px",
+        fontFamily: '"Press Start 2P", system-ui, sans-serif',
+        fontSize: "9px",
         color: "#888888",
       },
     );
@@ -136,7 +142,7 @@ export default class CatchScene extends Phaser.Scene {
   }
 
   updateHud() {
-    this.hud.setText(`🎯 ${this.score}`);
+    this.hud.setText(`${this.score}`);
   }
 
   endGame(result) {
@@ -155,24 +161,23 @@ export default class CatchScene extends Phaser.Scene {
 
     const message = won
       ? "¡GANASTE!\ncomiste 10 medialunas marplatenses\n\npulsá una tecla para salir"
-      : "¡PERDISTE!\nte tocó un porteño\n\npulsá una tecla para salir";
+      : "¡PERDISTE!\nhabia un piquete en la 9 de Julio\n\npulsá una tecla para salir";
 
     this.add
       .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, message, {
-        fontFamily: "system-ui, sans-serif",
-        fontSize: "30px",
-        color: won ? "#1b9c3f" : "#ff6b6b",
+        fontFamily: '"Press Start 2P", system-ui, sans-serif',
+        fontSize: "14px",
+        color: won ? "#1c7c37" : "#ff6b6b",
         align: "center",
+        lineSpacing: 8,
       })
       .setOrigin(0.5);
 
     // Tell the dashboard (via the main process) how the game ended.
     window.api?.minigame?.reportResult(result);
 
-    // Next key press restarts the game.
-    this.input.keyboard.once("keydown", () => this.scene.restart());
-    // To close the window instead, use:
-    // this.input.keyboard.once("keydown", () => window.close());
+    // Next key press closes the minigame window.
+    this.input.keyboard.once("keydown", () => window.close());
   }
 
   update(_time, delta) {
@@ -184,8 +189,13 @@ export default class CatchScene extends Phaser.Scene {
     // --- Move the player ---
     const left = this.cursors.left.isDown || this.keys.A.isDown;
     const right = this.cursors.right.isDown || this.keys.D.isDown;
-    if (left) this.player.x -= PLAYER_SPEED * dt;
-    else if (right) this.player.x += PLAYER_SPEED * dt;
+    if (right) {
+      this.player.x += PLAYER_SPEED * dt;
+      this.player.setFlipX(true); // mirror to face left
+    } else if (left) {
+      this.player.x -= PLAYER_SPEED * dt;
+      this.player.setFlipX(false); // face right (default)
+    }
 
     const halfW = PLAYER_W / 2;
     this.player.x = Phaser.Math.Clamp(this.player.x, halfW, GAME_WIDTH - halfW);

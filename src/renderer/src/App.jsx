@@ -12,8 +12,6 @@ import { useGameLogic } from "@/hooks/useGameState";
 export default function App() {
   const { feed, play, rest } = useGameLogic();
 
-
-
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="mx-auto max-w-4xl">
@@ -51,7 +49,6 @@ export default function App() {
           </section>
 
           <section className="col-span-2"></section>
-
         </main>
       </div>
     </div>

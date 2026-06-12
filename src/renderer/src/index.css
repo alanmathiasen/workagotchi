@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+@import "tailwindcss";
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -42,6 +42,7 @@
 }
 
 @theme inline {
+  --font-pixel: "Press Start 2P", system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -68,10 +69,11 @@
   * {
     border-color: var(--color-border);
   }
+
   body {
     margin: 0;
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: "Press Start 2P", system-ui, sans-serif;
   }
 }
