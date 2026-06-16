@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 
-const AGE_SECONDS_TO_WORKED_MINUTES_RATE = 540 / 60; // 1 minuto de ejecución son 9 horas de trabajo
+const AGE_SECONDS_TO_WORKED_MINUTES_RATE = 540 / 240; // 4 minutos de ejecución son 9 horas de trabajo
 
-// En 8 h de trabajo (480 min trabajados) cada stat va de 100 → 0.
-const WORK_MINUTES_TO_ZERO = 8 * 60; // 480
-const DECAY_PER_WORKED_MINUTE = 100 / WORK_MINUTES_TO_ZERO; // ≈ 0.2083
+// En 200 min trabajados (~3 h 20 m) cada stat va de 100 → 0.
+const WORK_MINUTES_TO_ZERO = 200;
+const DECAY_PER_WORKED_MINUTE = 100 / WORK_MINUTES_TO_ZERO; // = 0.5
 
 // La jornada de juego va de las 08:00 a las 17:00 (9 h = 540 min de trabajo).
 const WORK_DAY_START_MINUTE = 8 * 60; // 08:00 → workedMinutes = 0
